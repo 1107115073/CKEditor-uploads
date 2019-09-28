@@ -58,6 +58,7 @@
 					var ret = JSON.parse(xhr.responseText || '{}');
 					if (ret.uploaded === 1) {
 						obj.src = ret.url;
+						obj.progress.title = '上传成功';
 						obj.progress.setAttribute('style', percentage(100, true));
 					} else {
 						delete obj.src;
@@ -65,7 +66,6 @@
 						obj.progress.title = (msg ? msg + '，' : '') + '点击重新上传';
 						obj.progress.setAttribute('style', percentage(100, false));
 					}
-					console.log(ret);
 				}
 			}
 			// 完成删除
