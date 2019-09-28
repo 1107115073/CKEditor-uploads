@@ -5,9 +5,9 @@ CKeditor 4.x Batch Picture Upload Plug-in.
 1. 下载CKEditor 4.x
    - 请到官网去下载，这是官网的链接 https://ckeditor.com/ckeditor-4/download/
 2. 配置插件
-  - 将 uploads 插件复制到 CKEditor 目录下的 plugins 目录。
-  - 在 CKEditor 目录的 config.js 中启动插件。
-  - 在 CKEditor 目录的 config.js 中配置图片上传URL。
+   - 将 uploads 插件复制到 CKEditor 目录下的 plugins 目录。
+   - 在 CKEditor 目录的 config.js 中启动插件。
+   - 在 CKEditor 目录的 config.js 中配置图片上传URL。
 ## 参考配置
 ``` js
 CKEDITOR.editorConfig = function(config) {
