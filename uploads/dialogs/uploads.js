@@ -56,7 +56,7 @@
 			xhr.onreadystatechange = function() {
 				if (xhr.readyState == 4 && xhr.status == 200) {
 					var ret = JSON.parse(xhr.responseText || '{}');
-					if (ret.uploaded === 1) {
+					if (ret.uploaded == 1) {
 						obj.src = ret.url;
 						obj.progress.title = '上传成功';
 						obj.progress.setAttribute('style', percentage(100, true));
