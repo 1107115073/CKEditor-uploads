@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>A Simple Page with CKEditor</title>
+    <!-- Make sure the path to CKEditor is correct. -->
+    <script src="./ckeditor/ckeditor.js"></script>
+</head>
+
+<body>
+    <form>
+        <textarea name="editor1" id="editor1" rows="10" cols="80">
+                This is my textarea to be replaced with CKEditor.
+            </textarea>
+        <textarea name="editor2" id="editor2" rows="10" cols="80">
+                This is my textarea to be replaced with CKEditor.
+            </textarea>
+        <script>
+            // Replace the <textarea id="editor1"> with a CKEditor
+            // instance, using default configuration.
+            CKEDITOR.replace('editor1', {
+                // language: 'fr',
+                uiColor: '#9AB8F3',
+                uploads: function () {
+                    return {
+                        url: 'http://127.0.0.1:5500/test',
+                        // 自定义的请求头
+                        header: {
+                            token: '123456'
+                        },
+                        // 自定义的请求体
+                        body: {
+                            size: 10
+                        }
+                    }
+                }
+            });
+
+            CKEDITOR.replace('editor2', {
+                // language: 'fr',
+                // uiColor: '#9AB8F3',
+                uploads: function () {
+                    return {
+                        // 上传服务器url
+                        url: '',
+                        // 自定义的请求头
+                        header: {
+                            token: '222'
+                        },
+                        // 自定义的请求体
+                        body: {
+                            size: 10
+                        }
+                    }
+                }
+            });
+        </script>
+    </form>
+</body>
+
+</html>
