@@ -16,6 +16,7 @@ demo文件下有简单案例，配合使用说明查看。
 ### 使用说明
 
 1、将plugins/uploads文件放在自己项目的plugins目录下。
+
 2、在index.html中，如下添加uploads配置对象。
 
 ```js
