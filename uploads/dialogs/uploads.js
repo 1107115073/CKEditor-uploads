@@ -1,9 +1,9 @@
 /*
  Copyright (c) 2019, Weison. All rights reserved. 
 */
-(function() {
-	CKEDITOR.dialog.add('uploads', function(editor) {
-
+(function () {
+	CKEDITOR.dialog.add('uploads', function (editor) {
+		var randomNum = Math.floor((Math.random() * 99));
 		// 视图对象
 		var bi =
 			'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAHAUlEQVR4Xu1be4idRxX/nW/vJmqs0qL/qC2FRgWLj9w5c03XlH' +
@@ -26,8 +26,7 @@
 			'8TpK6VUHSEATzCzhfSVUvtO8Cki2qyqL1uCsVAo2EuPM76IyK5qTJIkyacLhUIlMFsCQAjhUlX9fVr3qqruIKInu0lSvtaoGaMtMaqqFgJ/MNXnfma+JavbkudwIYRbVfW0BS' +
 			'qnC6hGjzXqvgcMIXzYEhmqesnpUrCP4xwkomcbXdY2fRA5NTV1zurVq10fletb18v+f4G+aTZgHa+4J7Gd4jsEoFPEVpr8kAErbUY7tef/pvADfQC6eQQAAAAASUVORK5CYII=';
 		var vbg = 'center url(\'' + bi + '\') no-repeat';
-		var uicv = '<div id="uicv" style="width: 680px; height: 286px; overflow-y: scroll; background: ' + vbg +
-			'; display: flex; display: -ms-flexbox; display: -webkit-flex; flex-wrap: wrap; align-content: flex-start;"></div>';
+		var uicv = '<div id="uicv_' + randomNum + '" style="margin-top:10px;width: 680px; height: 286px; overflow-y: scroll; background: ' + vbg + '; display: flex; display: -ms-flexbox; display: -webkit-flex; flex-wrap: wrap; align-content: flex-start;"></div></div>';
 
 		// 上传状态
 		var ups = {};
@@ -36,10 +35,39 @@
 			return Object.keys(ups).length > 0;
 		}
 
-		// 请求方法
-		var url = editor.config.filebrowserUploadUrl;
+		// 检验是否设置
+		// function isSetOpt() {
+		// 	var opt = editor.config.uploads;
+		// 	if (!opt) {
+		// 		return false;
+		// 	}
+		// 	else {
+		// 		return opt();
+		// 	}
+		// }
 
+		// 设置获取回调参数
+		function setUploadOption() {
+			var optFn = editor.config.uploads();
+			var defOpt = {
+				url: editor.config.filebrowserUploadUrl || '',
+				// 自定义的请求头
+				header: {},
+				// 自定义的请求体
+				body: {},
+				// res返回url
+				resUrl: 'url',
+				// 是否开启多文件上传，默认false,不开启
+				multiple: false,
+				// 回显图片/链接 默认回显图片 true
+				isImg: true
+			};
+			window.uploadObj = Object.assign(defOpt, optFn);
+		}
+
+		// 请求方法
 		function http(obj) {
+			var url = window.uploadObj['url'];
 			if (!url) {
 				return alert('未配置上传URL');
 			}
@@ -48,16 +76,17 @@
 			// 创建进度
 			obj.progress = progress();
 			obj.div.appendChild(obj.progress);
-			obj.progress.onclick = function() {
+			obj.progress.onclick = function () {
 				!obj.src && http(obj);
 			}
 			// Ajax 请求
 			var xhr = window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject("Microsoft.XMLHTTP");
-			xhr.onreadystatechange = function() {
+			xhr.onreadystatechange = function () {
 				if (xhr.readyState == 4 && xhr.status == 200) {
 					var ret = JSON.parse(xhr.responseText || '{}');
-					if (ret.uploaded == 1) {
-						obj.src = ret.url;
+					var resUrl = window.uploadObj['resUrl'];
+					if (ret.code == 000) {
+						obj.src = ret + '.' + resUrl;
 						obj.progress.title = '上传成功';
 						obj.progress.setAttribute('style', percentage(100, true));
 					} else {
@@ -69,47 +98,64 @@
 				}
 			}
 			// 完成删除
-			xhr.onloadend = function(e) {
+			xhr.onloadend = function (e) {
 				delete ups[obj.file.name];
 			};
 			// 进度更新
-			xhr.onprogress = function(e) {
+			xhr.onprogress = function (e) {
 				if (e.lengthComputable) {
 					obj.progress.setAttribute('style', percentage(e.loaded / e.total * 100, true))
 				}
 			};
 			// 错误提示
-			xhr.onerror = function(e) {
+			xhr.onerror = function (e) {
 				obj.progress.setAttribute('style', percentage(100, false));
 				obj.progress.title = '点击重新上传';
 			};
 			// 提交请求
 			xhr.open("POST", url, true);
 			var fd = new FormData();
+			// 获取参数
+			var keyObj = window.uploadObj;
+			var keyObj_header = keyObj['header'];
+			var keyObj_body = keyObj['body'];
+			// 设置自定义请求头，请求携参
+			// xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded'); // 设置请求头
+			for (var key1 in keyObj_header) {
+				xhr.setRequestHeader(key1, keyObj_header[key1]);
+			}
+			for (var key2 in keyObj_body) {
+				fd.append(key2, keyObj_body[key2]);
+			}
 			fd.append('upload', obj.file);
 			fd.append('type', 'Images');
 			fd.append('responseType', 'json');
 			xhr.send(fd);
 		}
 
-		// 选择对象
+		// 选择对象, 创建input标签type=file
 		function choice() {
-			return window.uic || (function() {
-				var ne = document.createElement('input');
-				ne.setAttribute('type', 'file');
-				ne.setAttribute('multiple', 'multiple');
-				ne.setAttribute('accept', 'image/*');
-				ne.style.display = 'none';
-				document.body.appendChild(ne);
-				return window.uic = ne;
+			return window.imgFiles || (function () {
+				setUploadOption();
+				var eleInput = document.createElement('input');
+				var multiple = window.uploadObj['multiple'];
+				eleInput.setAttribute('type', 'file');
+				if (multiple) {
+					eleInput.setAttribute('multiple', 'multiple');
+				}
+				eleInput.setAttribute('accept', 'image/*');
+				eleInput.style.display = 'none';
+				document.body.appendChild(eleInput);
+				return window.imgFiles = eleInput;
 			})();
 		}
 
 		// 窗口标签
 		var ves;
 
+		// 获取图片浏览盒子
 		function vessel() {
-			return ves || (ves = document.querySelector("#uicv"));
+			return ves || (ves = document.querySelector("#uicv_" + randomNum));
 		}
 
 		// 取未上传
@@ -133,8 +179,9 @@
 		}
 
 		// 事件处理
-		choice().onchange = function() {
-			var fs = window.uic.files;
+		choice().onchange = function () {
+			var fs = window.imgFiles.files;
+
 			// 空触发
 			if (fs.length == 0) {
 				return clean();
@@ -152,6 +199,7 @@
 				// 构造图片
 				o.img = document.createElement('img');
 				o.img.setAttribute('style', 'border-radius: 3px; max-width: 100%; max-height: 100%; vertical-align: middle;');
+				o.img.setAttribute('title', fs[i].name);
 				// 图片预览
 				preview(fs[i], o.img);
 				o.div.appendChild(o.img);
@@ -166,7 +214,7 @@
 		function preview(file, img) {
 			var fr = new FileReader();
 			fr.readAsDataURL(file);
-			fr.onload = function() {
+			fr.onload = function () {
 				img.src = fr.result;
 			}
 		}
@@ -209,70 +257,91 @@
 			width: 600,
 			height: 300,
 			resizable: CKEDITOR.DIALOG_RESIZE_NONE,
-			contents: [{
-				id: 'upc',
-				elements: [{
-					type: 'html',
-					html: uicv
-				}]
-			}],
-			buttons: [{
-				type: 'button',
-				label: '选择',
-				title: '选择本地图片',
-				onClick: function() {
-					// 正在上传
-					if (isUp()) {
-						return alert("图片正在上传中...");
-					}
-					// 已经上传
-					if (uploaded().length > 0 && !confirm("要丢弃已上传图片吗？")) {
-						return false;
-					}
-					// 清空重选
-					clean();
-					choice().click();
+			contents: [
+				{
+					id: 'uploads',
+					label: '基础',
+					title: '基础配置',
+					elements: [
+						{
+							type: 'html',
+							id: 'upl',
+							// label: '上传',
+							html: uicv
+						}
+					],
 				}
-			}, {
-				type: 'button',
-				label: '上传',
-				title: '上传本地图片',
-				onClick: function() {
-					var uio = (window.uio || []);
-					// 空提示
-					if (uio.length == 0) {
-						return alert("请先选择图片");
-					};
-					// 正在上传
-					if (isUp()) {
-						return alert("图片正在上传中...");
+			],
+			buttons: [
+				{
+					type: 'button',
+					label: '选择',
+					title: '选择本地图片',
+					onClick: function () {
+						// 设置请求参数
+						if (!window.uploadObj) {
+							setUploadOption();
+						}
+						// 正在上传
+						if (isUp()) {
+							return alert("图片正在上传中...");
+						}
+						// 已经上传
+						if (uploaded().length > 0 && !confirm("要丢弃已上传图片吗？")) {
+							return false;
+						}
+						// 清空重选
+						clean();
+						choice().click();
 					}
-					// 上传图片
-					uio = unupload();
-					for (var i = 0; i < uio.length; i++) {
-						http(uio[i]);
+				},
+				{
+					type: 'button',
+					label: '上传',
+					title: '上传本地图片',
+					onClick: function () {
+						// 上传图片对象
+						var uio = (window.uio || []);
+						// 空提示
+						if (uio.length == 0) {
+							return alert("请先选择图片");
+						};
+						// 正在上传
+						if (isUp()) {
+							return alert("图片正在上传中...");
+						}
+						// 上传图片
+						uio = unupload();
+						for (var i = 0; i < uio.length; i++) {
+							http(uio[i]);
+						}
 					}
-				}
-			}, {
-				type: 'button',
-				label: '确认',
-				title: '确认选中图片',
-				onClick: function() {
-					// 有未上传
-					if (unupload().length > 0 && !confirm("有未上传图片，继续吗？")) {
-						return false;
+				},
+				{
+					type: 'button',
+					label: '确认',
+					title: '确认选中图片',
+					onClick: function () {
+						// 有未上传
+						if (unupload().length > 0 && !confirm("有未上传图片，继续吗？")) {
+							return false;
+						}
+						// 插入文档
+						var upd = uploaded();
+						for (var i = 0; i < upd.length; i++) {
+							if (window.uploadObj['isImg']) {
+								editor.insertElement(CKEDITOR.dom.element.createFromHtml('<p><img src="' + upd[i].src + '" /></p>'));
+							} else {
+								editor.insertElement(CKEDITOR.dom.element.createFromHtml('<p><a href="' + upd[i].src + '" />' + upd[i].src + '</p>'));
+							}
+						}
+						// 清空关闭
+						upd.length > 0 && clean();
+						CKEDITOR.dialog.getCurrent().hide();
 					}
-					// 插入文档
-					var upd = uploaded();
-					for (var i = 0; i < upd.length; i++) {
-						editor.insertElement(CKEDITOR.dom.element.createFromHtml('<p><img src="' + upd[i].src + '" /></p>'));
-					}
-					// 清空关闭
-					upd.length > 0 && clean();
-					CKEDITOR.dialog.getCurrent().hide();
-				}
-			}],
-			onCancel: function() {
+				},
+			],
+			onCancel: function () {
 				// 正在上传
 				if (isUp() && !confirm("图片正在上传,是否关闭？")) {
 					return false;
